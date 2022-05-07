@@ -3,11 +3,11 @@ import { Double } from 'mongodb';
 
 // Lots of nullable values because the default values will come from the product
 const combinationSchema = new Schema({
-    name:  { type: String, required: false, default: null },
-    price: { type: Double, required: false, default: null },
-    discount: { type: Number, required: false, default: null },
+    name:  { type: String, default: null },
+    price: { type: Double, default: null },
+    discount: { type: Number, default: null },
     stock: { type: Number, default: 0 },
-    variants: [{ type: Schema.Types.ObjectId, ref: 'variant' }]
+    options: [{ type: Schema.Types.ObjectId, ref: 'product.optionsGroups.options' }]
 });
 
 export const Combination = model('combination', combinationSchema);

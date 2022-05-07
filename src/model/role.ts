@@ -7,4 +7,12 @@ const roleSchema = new Schema({
     permissions: [{ type: Schema.Types.ObjectId, ref: 'permission' }]
 });
 
+roleSchema.static("unfillablePaths", function() {
+    return [ ];
+})
+
+roleSchema.static("unqueryablePaths", function() {
+    return [ ];
+})
+
 export const Role = model('role', roleSchema);

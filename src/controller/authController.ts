@@ -19,8 +19,12 @@ export class AuthController {
             return;
         }
             
-
         const user = await User.findOne({email: email}).select("+password");
+
+        if (!user) {
+            res.status(401).send();
+            return;
+        }
 
         const match: boolean = await compare(password, user.password);
 

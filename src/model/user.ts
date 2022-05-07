@@ -12,7 +12,8 @@ const userSchema = new Schema({
     refresh_tokens: {
         type: [{
             signature: { type: String, required: true },
-            status: { type: Boolean, default: true }
+            status: { type: Boolean, default: true },
+            user_agent: { type: String, required: true }
         }],
         select: false
     },
@@ -25,7 +26,14 @@ const userSchema = new Schema({
     }]
 });
 
-userSchema.static("guardedPaths", function() {
+userSchema.static("unfillablePaths", function() {
+    return [
+        "password",
+        "refresh_token"
+    ];
+})
+
+userSchema.static("unqueryablePaths", function() {
     return [
         "password",
         "refresh_token"

@@ -52,9 +52,7 @@ export class BaseResourceController {
     
             let query = this._model.find();
     
-            if (populate) {
-                console.log(populate);
-    
+            if (populate) {  
                 let formattedPopulation = this.populateRecursively(populate);
                 
                 formattedPopulation.forEach((popul: any) => {
@@ -65,13 +63,18 @@ export class BaseResourceController {
             if (filters) {
                 let usedFilterFields: string[] = [];
                 filters.forEach((filter) => {
+                    if (!filter.field)
+                        return;
+                    if (!filter.value)
+                        return;
+
                     let equals = !filter.field.startsWith('-');
                     let field = filter.field.substring(filter.field.startsWith('-') || filter.field.startsWith('+') ? 1 : 0);
                     let value: string | RegExp = filter.value;
                     
                     // Skip field if it is in guarded array or it was already added
                     // @ts-ignore
-                    if (this._model.guardedPaths().includes(field) || usedFilterFields.includes(field))
+                    if (this._model.unqueryablePaths().includes(field) || usedFilterFields.includes(field))
                         return;
         
                     query.where(field);
@@ -93,7 +96,7 @@ export class BaseResourceController {
                     let field = sorting.substring(sorting.startsWith('-') || sorting.startsWith('+') ? 1 : 0);
     
                     // @ts-ignore
-                    if (this._model.guardedPaths().includes(field))
+                    if (this._model.unqueryablePaths().includes(field))
                         return;
     
                     // Example
@@ -107,7 +110,7 @@ export class BaseResourceController {
                 query.select(part);
     
                 // @ts-ignore
-                query.select(this._model.guardedPaths().map((field) => "-" + field));
+                query.select(this._model.unqueryablePaths().map((field) => "-" + field));
             }
     
             query.limit(limit);
@@ -136,9 +139,15 @@ export class BaseResourceController {
         let result: Population[] = [];
 
         for (const key in populate) {
-            if (populate.hasOwnProperty(key)) {
+            // Select will be reserved for the paths you wanna select in the populate
+            if (populate.hasOwnProperty(key) && key != 'select') {
                 const element = populate[key];
-                result.push({ path: key, populate: this.populateRecursively(element) });
+                let object: any = { path: key, populate: this.populateRecursively(element) };
+
+                if (element.hasOwnProperty('select'))
+                    object.select = element.select;
+
+                result.push(object);
             }
         }
 

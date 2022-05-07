@@ -1,7 +1,7 @@
 import { Schema, model } from 'mongoose';
 
 
-const permissionSchema = new Schema({
+export const permissionSchema = new Schema({
     name:  { type: String, unique: true, maxlength: 255 },
     description: String
 });
