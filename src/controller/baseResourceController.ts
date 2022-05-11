@@ -1,5 +1,6 @@
 import { Model } from 'mongoose';
 import { Request, Response, NextFunction } from 'express';
+import { extend } from 'lodash';
 
 interface Filter {
     field: string,
@@ -16,7 +17,7 @@ export class BaseResourceController {
 
     protected _model: Model<any>;
 
-    constructor(model: Model<any>) {
+    constructor(model: Model<any>, subdocument: string[] = []) {
         // Generic types are really weird in typescript
         // and also they don't work in javascript
         // so a lot of the functionality simply doesn't work
@@ -44,7 +45,7 @@ export class BaseResourceController {
             }
     
             let part: string[] = req.body.part;
-            let populate: any = req.body.populate;
+            // let populate: any = req.body.populate;
             let filters: Filter[] = req.body.filters;
             let sortings: string[] = req.body.sortings;
             let limit: number = req.body.limit ? req.body.limit : 30;
@@ -52,13 +53,13 @@ export class BaseResourceController {
     
             let query = this._model.find();
     
-            if (populate) {  
-                let formattedPopulation = this.populateRecursively(populate);
+            // if (populate) {  
+            //     let formattedPopulation = this.populateRecursively(populate);
                 
-                formattedPopulation.forEach((popul: any) => {
-                    query.populate(popul);
-                });
-            }
+            //     formattedPopulation.forEach((popul: any) => {
+            //         query.populate(popul);
+            //     });
+            // }
     
             if (filters) {
                 let usedFilterFields: string[] = [];
@@ -132,9 +133,27 @@ export class BaseResourceController {
                 else
                     res.status(201).send();
             });
-        }, (err) => next(err));
+        }, (err: any) => next(err));
     }
     
+    update(req: Request, res: Response, next: NextFunction): void {
+        let originalObject = this._model.findById(req.params.id);
+
+        let updatedObject = extend(originalObject, req.body);
+        
+        updatedObject.save((err: any) => {
+            if (err)
+                next(err);
+            else
+                res.status(204).send();
+        });
+    }
+
+    /**
+     * Deep iteration through the keys of an object to create a valid object that can be passed to populate
+     * @param populate An object with the following structe: { modelToPopulate: {  } }
+     * @returns A valid object that can be passed to a mongoose model populate
+     */
     private populateRecursively(populate: any): any {
         let result: Population[] = [];
 

@@ -6,6 +6,7 @@ import { authRouter } from './routes/auth';
 import { usersRouter } from './routes/users';
 import { rolesRouter } from './routes/roles';
 import { permissionsRouter } from './routes/permissions';
+import { productRouter } from './routes/product';
 import path from 'path';
 import mongoose from 'mongoose';
 
@@ -21,10 +22,11 @@ app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
+app.use('/auth', authRouter);
 app.use('/users', usersRouter);
 app.use('/roles', rolesRouter);
 app.use('/permissions', permissionsRouter);
-app.use('/auth', authRouter);
+app.use('/products', productRouter);
 
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
   console.error(err.stack);
