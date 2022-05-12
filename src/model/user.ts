@@ -29,14 +29,14 @@ const userSchema = new Schema({
 userSchema.static("unfillablePaths", function() {
     return [
         "password",
-        "refresh_token"
+        "refresh_tokens"
     ];
 })
 
 userSchema.static("unqueryablePaths", function() {
     return [
         "password",
-        "refresh_token"
+        "refresh_tokens"
     ];
 })
 
