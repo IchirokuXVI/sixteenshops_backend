@@ -34,13 +34,13 @@ export class BaseResourceController {
         let limit: number = req.body.limit ? req.body.limit : 30;
         let page: number = req.body.page ? req.body.page : 0;
 
-        return req.query._id ? this._model.findById(req.query._id) : this._model.find().limit(limit).skip(page * limit).exec();
+        return req.query._id || req.query.id ? this._model.findById(req.query._id || req.query.id) : this._model.find().limit(limit).skip(page * limit).exec();
     }
 
     async filter(req: Request, res: Response, next: NextFunction) {
         try {
-            if (req.body._id) {
-                res.send(await this._model.findById(req.body._id));
+            if (req.body._id || req.body.id) {
+                res.send(await this._model.findById(req.body._id || req.body.id));
                 return;
             }
     
@@ -137,7 +137,7 @@ export class BaseResourceController {
     }
     
     update(req: Request, res: Response, next: NextFunction): void {
-        let originalObject = this._model.findById(req.params.id);
+        let originalObject = this._model.findById(req.params._id || req.params.id);
 
         let updatedObject = extend(originalObject, req.body);
         
@@ -147,6 +147,16 @@ export class BaseResourceController {
             else
                 res.status(204).send();
         });
+    }
+
+    async delete(req: Request, res: Response, next: NextFunction) {
+        try {
+            await this._model.deleteOne({ _id: req.params.id || req.params._id });
+
+            res.status(204).send();
+        } catch (err) {
+            next(err);
+        }
     }
 
     /**
