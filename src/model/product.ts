@@ -9,7 +9,7 @@ export const productSchema = new Schema({
     optionGroups: [
         optionGroupSchema
     ]
-});
+}, { timestamps: true });
 
 productSchema.post('save', async function(doc) {
     // doc.optionGroups?.forEach(

@@ -10,6 +10,7 @@ import { productRouter } from './routes/product';
 import path from 'path';
 import mongoose from 'mongoose';
 import cors from 'cors';
+import { AuthController } from './controller/authController';
 
 const app: Application = express();
 
@@ -23,6 +24,9 @@ app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(cors());
+
+app.use(AuthController.parseToken);
+app.use(AuthController.logConnection);
 
 app.use('/auth', authRouter);
 app.use('/users', usersRouter);

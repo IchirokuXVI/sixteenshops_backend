@@ -10,6 +10,6 @@ const invoiceSchema = new Schema({
         amount: { type: Number, required: true },
         price: { type: Double, required: true }
     }]
-});
+}, { timestamps: true });
 
 export const Invoice = model('invoice', invoiceSchema);

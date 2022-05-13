@@ -9,11 +9,13 @@ const userSchema = new Schema({
     password: { type: String, required: true, select: false, set: (pass: string) => hashBCrypt(pass) },
     name: String,
     phone: String,
+    lastConnection: Date,
     refresh_tokens: {
         type: [{
             signature: { type: String, required: true },
             status: { type: Boolean, default: true },
-            user_agent: { type: String, required: true }
+            user_agent: { type: String, required: true },
+            issued_at: { type: Date, default: Date.now }
         }],
         select: false
     },
@@ -23,8 +25,8 @@ const userSchema = new Schema({
     permissions: [{
         permission: { type: Schema.Types.ObjectId, ref: 'permission' },
         allow: { type: Boolean, required: true }
-    }]
-});
+    }],
+}, { timestamps: true });
 
 userSchema.static("unfillablePaths", function() {
     return [

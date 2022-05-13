@@ -5,7 +5,7 @@ const roleSchema = new Schema({
     description: String,
     // One Way Embedding
     permissions: [{ type: Schema.Types.ObjectId, ref: 'permission' }]
-});
+}, { timestamps: true });
 
 roleSchema.static("unfillablePaths", function() {
     return [ ];

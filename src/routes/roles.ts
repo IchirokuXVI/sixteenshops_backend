@@ -4,9 +4,8 @@ import { RoleController } from '../controller/roleController';
 
 const router = Router();
 let roleController = new RoleController();
-let authController = new AuthController();
 
-router.use(authController.verifyToken);
+router.use(AuthController.verifyToken);
 
 router.get('/', roleController.filter);
 router.post('/', roleController.create);

@@ -7,6 +7,6 @@ const combinationSchema = new Schema({
     discount: { type: Number, default: null },
     stock: { type: Number, default: 0 },
     options: { type: [{ type: Schema.Types.ObjectId, ref: 'product.optionsGroups.options' }], unique: true }
-});
+}, { timestamps: true });
 
 export const Combination = model('combination', combinationSchema);

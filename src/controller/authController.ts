@@ -10,7 +10,7 @@ export class AuthController {
     private static SECRET_ACCESS = "zCzV.9o83#-xSDPW,nn(z7DBJ";
     private static SECRET_REFRESH = "n51Is!TDtxRC%*CM8nnguJspd6ej.PVep2Qf(s5NZ,bw=F8rEDQ4WXETnO4Q#&Hz<";
 
-    async login(req: Request, res: Response, next: NextFunction) {
+    static async login(req: Request, res: Response, next: NextFunction) {
         const email: string = req.body.email;
         const password: string = req.body.password;
 
@@ -36,30 +36,43 @@ export class AuthController {
         res.send(await AuthController.generateTokens(user, req.get('User-Agent')));
     }
 
-    async verifyToken(req: Request, res: Response, next: NextFunction) {
-        if (!req.headers.authorization || !req.headers.authorization.startsWith('Bearer ')) {
-            res.status(400).send();
-            return;
+    static async logConnection(req: Request, res: Response, next: NextFunction) {
+        if (res.locals.tokenInfo) {
+            User.updateOne({ _id: res.locals.tokenInfo._id || res.locals.tokenInfo.user_id }, { $set: { lastConnection: Date.now } }).exec();
         }
-
-        let token = req.headers.authorization.split(' ')[1];
-
+    }
+    
+    static async parseToken(req: Request, res: Response, next: NextFunction) {
+        if (!req.headers.authorization || !req.headers.authorization.startsWith('Bearer ')) {
+            next();
+        }
+        
+        let token = req.headers.authorization!.split(' ')[1];
+        
         try {
             res.locals.tokenInfo = jwt.verify(token, AuthController.SECRET_ACCESS);
+        } catch (e) {
+            delete res.locals.tokenInfo;
+            next();
+        }
+    };
+
+    static async verifyToken(req: Request, res: Response, next: NextFunction) {
+        try {
             if (res.locals.tokenInfo)
                 next();
             else
-                throw new Error("error verifying token");
+                throw new Error("invalid token");
         } catch (e) {
             res.status(401).send();
         }
     }
 
-    async checkToken(req: Request, res: Response, next: NextFunction) {
+    static async checkToken(req: Request, res: Response, next: NextFunction) {
         res.send(res.locals.tokenInfo);
     }
 
-    async refreshToken(req: Request, res: Response, next: NextFunction) {
+    static async refreshToken(req: Request, res: Response, next: NextFunction) {
         if (!req.headers.authorization || !req.headers.authorization.startsWith('Bearer ')) {
             res.status(400);
             return;

@@ -7,4 +7,4 @@ export const optionGroupSchema = new Schema({
     options: [
         optionSchema
     ],
-});
+}, { timestamps: true });
