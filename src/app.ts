@@ -2,15 +2,11 @@ import express, { Application, Request, Response, NextFunction } from 'express';
 import morgan from 'morgan';
 import cookieParser from 'cookie-parser';
 import { debug } from 'console';
-import { authRouter } from './routes/auth';
-import { usersRouter } from './routes/users';
-import { rolesRouter } from './routes/roles';
-import { permissionsRouter } from './routes/permissions';
-import { productRouter } from './routes/product';
 import path from 'path';
 import mongoose from 'mongoose';
 import cors from 'cors';
 import { AuthController } from './controller/authController';
+import { router } from './routes';
 
 const app: Application = express();
 
@@ -28,11 +24,7 @@ app.use(cors());
 app.use(AuthController.parseToken);
 app.use(AuthController.logConnection);
 
-app.use('/auth', authRouter);
-app.use('/users', usersRouter);
-app.use('/roles', rolesRouter);
-app.use('/permissions', permissionsRouter);
-app.use('/products', productRouter);
+app.use(router);
 
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
   console.error(err.stack);
