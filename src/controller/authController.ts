@@ -45,10 +45,18 @@ export class AuthController {
         let token = req.headers.authorization.split(' ')[1];
 
         try {
-            res.send(jwt.verify(token, AuthController.SECRET_ACCESS));
+            res.locals.tokenInfo = jwt.verify(token, AuthController.SECRET_ACCESS);
+            if (res.locals.tokenInfo)
+                next();
+            else
+                throw new Error("error verifying token");
         } catch (e) {
             res.status(401).send();
         }
+    }
+
+    async checkToken(req: Request, res: Response, next: NextFunction) {
+        res.send(res.locals.tokenInfo);
     }
 
     async refreshToken(req: Request, res: Response, next: NextFunction) {
