@@ -18,7 +18,7 @@ export class AuthController {
             res.status(400).send();
             return;
         }
-            
+        
         const user = await User.findOne({email: email}).select("+password");
 
         if (!user) {
@@ -33,12 +33,12 @@ export class AuthController {
             return;
         }
 
-        res.send(await AuthController.generateTokens(user));
+        res.send(await AuthController.generateTokens(user, req.get('User-Agent')));
     }
 
     async verifyToken(req: Request, res: Response, next: NextFunction) {
         if (!req.headers.authorization || !req.headers.authorization.startsWith('Bearer ')) {
-            res.status(400);
+            res.status(400).send();
             return;
         }
 
@@ -47,7 +47,7 @@ export class AuthController {
         try {
             res.send(jwt.verify(token, AuthController.SECRET_ACCESS));
         } catch (e) {
-            next(e);
+            res.status(401).send();
         }
     }
 
@@ -76,15 +76,14 @@ export class AuthController {
                 throw new Error("token not found");
             }
             
-            // @ts-ignore
             if (!user.refresh_tokens[0].status) {
                 // $[] Modifica todos los elementos del array
                 // https://www.mongodb.com/docs/manual/reference/operator/update/positional-all/
-                await User.update({ _id: user._id }, { $set: { "refresh_tokens.$[].status": false } });
+                await User.updateOne({ _id: user._id }, { $set: { "refresh_tokens.$[].status": false } });
                 throw new Error("expired token");
             }
 
-            let tokens = await AuthController.generateTokens(user);
+            let tokens = await AuthController.generateTokens(user, req.get('User-Agent'));
 
             user.refresh_tokens[0].status = false;
             user.save();
@@ -95,7 +94,7 @@ export class AuthController {
         }
     }
 
-    private static async generateTokens(user: any): Promise<{ refresh_token: string, access_token: string }> {
+    private static async generateTokens(user: any, userAgent: any): Promise<{ refresh_token: string, access_token: string }> {
         const payload = {
             _id: user._id,
             email: user.email,
@@ -105,10 +104,10 @@ export class AuthController {
 
         // Expires in 600 seconds (10 minutes)
         // iat claim added automatically
-        const accessToken = jwt.sign(payload, AuthController.SECRET_ACCESS, { expiresIn: 600 });
+        const accessToken = jwt.sign(payload, AuthController.SECRET_ACCESS, { expiresIn: 16 });
         const refreshToken = jwt.sign({ user_id: user._id }, AuthController.SECRET_REFRESH, { expiresIn: "3 days" });
 
-        await User.update({ _id: user._id }, { $push: { refresh_tokens: { signature: refreshToken.split(".")[2] } } });
+        await User.updateOne({ _id: user._id }, { $push: { refresh_tokens: { signature: refreshToken.split(".")[2], user_agent: userAgent } } });
 
         return { refresh_token: refreshToken, access_token: accessToken };
     }
