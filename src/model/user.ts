@@ -15,7 +15,7 @@ const userSchema = new Schema({
             signature: { type: String, required: true },
             status: { type: Boolean, default: true },
             user_agent: { type: String, required: true },
-            issued_at: { type: Date, default: Date.now }
+            issued_at: { type: Date, default: Date.now() }
         }],
         select: false
     },

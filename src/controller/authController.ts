@@ -38,19 +38,22 @@ export class AuthController {
 
     static async logConnection(req: Request, res: Response, next: NextFunction) {
         if (res.locals.tokenInfo) {
-            User.updateOne({ _id: res.locals.tokenInfo._id || res.locals.tokenInfo.user_id }, { $set: { lastConnection: Date.now } }).exec();
+            User.updateOne({ _id: res.locals.tokenInfo._id || res.locals.tokenInfo.user_id }, { $set: { lastConnection: Date.now() } }).exec();
         }
+        next();
     }
     
     static async parseToken(req: Request, res: Response, next: NextFunction) {
         if (!req.headers.authorization || !req.headers.authorization.startsWith('Bearer ')) {
             next();
+            return;
         }
         
         let token = req.headers.authorization!.split(' ')[1];
         
         try {
             res.locals.tokenInfo = jwt.verify(token, AuthController.SECRET_ACCESS);
+            next();
         } catch (e) {
             delete res.locals.tokenInfo;
             next();
@@ -59,9 +62,10 @@ export class AuthController {
 
     static async verifyToken(req: Request, res: Response, next: NextFunction) {
         try {
-            if (res.locals.tokenInfo)
+            if (res.locals.tokenInfo) {
                 next();
-            else
+                return;
+            } else
                 throw new Error("invalid token");
         } catch (e) {
             res.status(401).send();
