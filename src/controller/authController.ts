@@ -1,5 +1,5 @@
 import { BaseResourceController } from './baseResourceController';
-import { User } from '../model/user';
+import { User } from '../models/user';
 import { Request, Response, NextFunction } from 'express';
 import { compare } from 'bcrypt';
 import * as jwt from 'jsonwebtoken';

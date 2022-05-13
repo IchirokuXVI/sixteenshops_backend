@@ -1,5 +1,5 @@
 import { BaseResourceController } from './baseResourceController';
-import { Invoice } from '../model/invoice';
+import { Invoice } from '../models/invoice';
 
 export class InvoiceController extends BaseResourceController {
     constructor() {

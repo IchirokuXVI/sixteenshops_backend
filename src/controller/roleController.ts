@@ -1,5 +1,5 @@
 import { BaseResourceController } from './baseResourceController';
-import { Role } from '../model/role';
+import { Role } from '../models/role';
 
 export class RoleController extends BaseResourceController {
     constructor() {

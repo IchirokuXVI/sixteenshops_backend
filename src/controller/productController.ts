@@ -1,6 +1,6 @@
 import { BaseResourceController } from './baseResourceController';
 import { Request, Response, NextFunction } from 'express';
-import { Product } from '../model/product';
+import { Product } from '../models/product';
 
 export class ProductController extends BaseResourceController {
     constructor() {

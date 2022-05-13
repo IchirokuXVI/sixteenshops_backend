@@ -1,5 +1,5 @@
 import { BaseResourceController } from './baseResourceController';
-import { Permission } from '../model/permission';
+import { Permission } from '../models/permission';
 
 export class PermissionController extends BaseResourceController {
     constructor() {

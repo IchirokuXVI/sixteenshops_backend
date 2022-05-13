@@ -1,5 +1,5 @@
 import { BaseResourceController } from './baseResourceController';
-import { Combination } from '../model/combination';
+import { Combination } from '../models/combination';
 
 export class CombinationController extends BaseResourceController {
     constructor() {
