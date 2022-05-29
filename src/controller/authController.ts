@@ -119,7 +119,7 @@ export class AuthController {
         }
     }
 
-    private static async generateTokens(user: any, userAgent: any): Promise<{ refresh_token: string, access_token: string }> {
+    private static async generateTokens(user: any, userAgent: any): Promise<{ refresh_token: string, access_token: string, user: any }> {
         const payload = {
             _id: user._id,
             email: user.email,
@@ -134,6 +134,6 @@ export class AuthController {
 
         await User.updateOne({ _id: user._id }, { $push: { refresh_tokens: { signature: refreshToken.split(".")[2], user_agent: userAgent } } });
 
-        return { refresh_token: refreshToken, access_token: accessToken };
+        return { refresh_token: refreshToken, access_token: accessToken, user: user };
     }
 }
