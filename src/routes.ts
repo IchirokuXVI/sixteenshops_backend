@@ -1,9 +1,9 @@
 import { Router } from "express";
-import { permissionsRouter } from "./routes/permissions";
-import { productRouter } from "./routes/product";
-import { rolesRouter } from "./routes/roles";
-import { usersRouter } from "./routes/users";
-import { authRouter } from "./routes/auth";
+import { permissionsRouter } from "./routes/permissions.routes";
+import { productRouter } from "./routes/products.routes";
+import { rolesRouter } from "./routes/roles.routes";
+import { usersRouter } from "./routes/users.routes";
+import { authRouter } from "./routes/auth.routes";
 
 const expressRouter = Router();
 
