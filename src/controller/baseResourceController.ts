@@ -28,6 +28,9 @@ export class BaseResourceController {
 
         this.filter = this.filter.bind(this);
         this.create = this.create.bind(this);
+        this.get = this.get.bind(this);
+        this.update = this.update.bind(this);
+        this.delete = this.delete.bind(this);
     }
 
     async get(req: Request, res: Response) {
@@ -133,20 +136,23 @@ export class BaseResourceController {
                 else
                     res.status(201).send();
             });
+
+            res.locals.createdObject = object;
         }, (err: any) => next(err));
     }
     
-    update(req: Request, res: Response, next: NextFunction): void {
-        let originalObject = this._model.findById(req.params._id || req.params.id);
+    async update(req: Request, res: Response, next: NextFunction) {
+        try {
+            let originalObject = await this._model.findById(req.params.id || req.params._id);
 
-        let updatedObject = extend(originalObject, req.body);
+            let updatedObject = extend(originalObject, req.body);
         
-        updatedObject.save((err: any) => {
-            if (err)
-                next(err);
-            else
-                res.status(204).send();
-        });
+            await updatedObject.save();
+
+            res.status(204).send();
+        } catch (err) {
+            next(err);
+        }
     }
 
     async delete(req: Request, res: Response, next: NextFunction) {

@@ -7,7 +7,7 @@ const userSchema = new Schema({
     // Passwords are hashed with bcrypt so their size is always 60
     // Select false makes so that in a query the password isn't selected by default
     password: { type: String, required: true, select: false, set: (pass: string) => hashBCrypt(pass) },
-    avatar: String, // Filename of a default avatar. Null if the avatar is uploaded by the user
+    avatar: { type: String, default: 'user.png' }, // Filename of a default avatar. Null if the avatar is uploaded by the user
     name: String,
     phone: String,
     lastConnection: Date,

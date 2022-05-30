@@ -19,14 +19,23 @@ export class UserController extends BaseResourceController {
         super.create(req, res, next);
     }
 
-    override update(req: Request, res: Response, next: NextFunction) {
+    moveAvatar(req: Request, res: Response, next: NextFunction) {
+        if (req.file && req.file.fieldname == 'avatar') {
+            fs.rename(req.file.path, `storage/${res.locals.createdObject._id}/avatar`, (err) => {
+                if (err) throw err;
+                console.log(`Avatar of user ${ res.locals.createdObject._id } moved to corresponding folder`)
+            });
+        }
+    }
+
+    override async update(req: Request, res: Response, next: NextFunction) {
         if (req.file && req.file.fieldname == 'avatar') {
             // Avatar field only saves the default avatar path.
             // The custom avatar path is always the same so there is no need to save it
             req.body.avatar = null;
         } else if (req.body.avatar) {
             // Delete old avatar (doesn't matter if it doesn't exist)
-            fs.unlink(`../../storage/${req.params.id || req.params._id}/avatar`, (err) => {
+            fs.unlink(`storage/${req.params.id || req.params._id}/avatar`, (err) => {
                 if (err) throw err;
                 console.log('User id ' + req.params.id || req.params._id + ' avatar deleted');
             });
@@ -34,6 +43,9 @@ export class UserController extends BaseResourceController {
         super.update(req, res, next);
     }
 
+    /**
+     * Shows the avatar of the given user cropped to 1:1 aspect ratio
+     */
     async getAvatar(req: Request, res: Response, next: NextFunction) {
         let id = req.params.id || req.params._id;
 
@@ -52,21 +64,26 @@ export class UserController extends BaseResourceController {
 
         let resolution;
 
+        // There is a bug I didn't want to fix:
+        // If the resolution is NaN (an string for example)
+        // the original image will be returned with its original aspect ratio
+        // It was quite handy for testing
         if (req.query.resolution) {
             // Becomes NaN if the parse fails
             resolution = parseInt((req.query as any).resolution, 10);
-        } else if (req.query.size) {
-            let size = req.query.size;
-            if (size == 'icon')
-                resolution = 32;
-            else if (size == 'avatar')
-                resolution = 64;
-            else if (size == 'small')
-                resolution = 128;
-            else if (size == 'standard')
-                resolution = 256;
-            else if (size == 'large')
-                resolution = 512;
+        } else {
+            // Possible values for the size query param
+            const sizes = {
+                icon: 32,
+                avatar: 64,
+                small: 128,
+                standard: 256,
+                large: 512
+            };
+            if (req.query.size && typeof req.query.size == 'string')
+                resolution = (sizes as any)[req.query.size]; // Fucking typescript
+            else
+                resolution = sizes.standard;
         }
         
         // Check if resolution isNaN before using it
@@ -74,8 +91,8 @@ export class UserController extends BaseResourceController {
             transformer.resize({
                 width: resolution,
                 height: resolution,
-                fit: sharp.fit.cover,
-                position: sharp.strategy.entropy
+                fit: sharp.fit.cover, // Preserving aspect ratio, ensure the image covers both provided dimensions by cropping/clipping to fit
+                position: sharp.strategy.entropy // focus on the region with the highest Shannon entropy
             });
 
         var s = fs.createReadStream(file);
