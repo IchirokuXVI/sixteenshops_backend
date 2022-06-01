@@ -3,7 +3,7 @@ import { User } from '../models/user';
 import { Request, Response, NextFunction } from 'express';
 import fs from 'fs';
 import sharp from 'sharp';
-import { isNaN, isNumber } from 'lodash';
+import { isNaN } from 'lodash';
 
 export class UserController extends BaseResourceController {
     constructor() {
@@ -19,13 +19,33 @@ export class UserController extends BaseResourceController {
         super.create(req, res, next);
     }
 
+    async checkEmail(req: Request, res: Response, next: NextFunction) {
+        if (!req.query.email) {
+            next(new Error("missing param: email"));
+            return;
+        }
+
+        let user = await User.findOne({ email: req.query.email }).select('_id').lean();
+        
+        res.json(user ? true : false);
+
+        return;
+    }
+
     moveAvatar(req: Request, res: Response, next: NextFunction) {
         if (req.file && req.file.fieldname == 'avatar') {
-            fs.rename(req.file.path, `storage/${res.locals.createdObject._id}/avatar`, (err) => {
+            let userPath = `storage/${res.locals.createdObject._id}`;
+            fs.mkdirSync(userPath, { recursive: true });
+            fs.rename(req.file.path, userPath + "/avatar", (err) => {
                 if (err) throw err;
                 console.log(`Avatar of user ${ res.locals.createdObject._id } moved to corresponding folder`)
             });
         }
+    }
+
+    deleteFolder(req: Request, res: Response, next: NextFunction) {
+        let userPath = `storage/${req.params._id || req.params.id}`;
+        fs.rmSync(userPath, { recursive: true, force: true });
     }
 
     override async update(req: Request, res: Response, next: NextFunction) {
@@ -36,7 +56,8 @@ export class UserController extends BaseResourceController {
         } else if (req.body.avatar) {
             // Delete old avatar (doesn't matter if it doesn't exist)
             fs.unlink(`storage/${req.params.id || req.params._id}/avatar`, (err) => {
-                if (err) throw err;
+                // Doesn't matter if there is an error because it will be most likely
+                // because the file doesn't exist
                 console.log('User id ' + req.params.id || req.params._id + ' avatar deleted');
             });
         }
@@ -51,12 +72,17 @@ export class UserController extends BaseResourceController {
 
         let user = await User.findById(id).select('avatar').lean();
 
+        if (!user) {
+            next(new Error("user not found"));
+            return;
+        }
+
         let file;
 
         // If the user has a default avatar then return it
         // Otherwise return the avatar file that is placed in his folder
         if (user.avatar)
-            file = `storage/defaultAvatars/${user.avatar}`;
+            file = `storage/public/defaultAvatars/${user.avatar}`;
         else
             file = `storage/${id}/avatar`;
 

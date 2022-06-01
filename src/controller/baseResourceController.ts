@@ -33,11 +33,20 @@ export class BaseResourceController {
         this.delete = this.delete.bind(this);
     }
 
-    async get(req: Request, res: Response) {
+    async get(req: Request, res: Response, next: NextFunction) {
         let limit: number = req.body.limit ? req.body.limit : 30;
         let page: number = req.body.page ? req.body.page : 0;
 
-        return req.query._id || req.query.id ? this._model.findById(req.query._id || req.query.id) : this._model.find().limit(limit).skip(page * limit).exec();
+        let id = req.params._id || req.params.id;
+
+        try {
+            res.send(await this._model.findById(id).lean());
+        } catch (e) {
+            next(e);
+            return;
+        }
+
+        next();
     }
 
     async filter(req: Request, res: Response, next: NextFunction) {
@@ -123,21 +132,28 @@ export class BaseResourceController {
             res.send(await query.exec());
         } catch (e) {
             next(e);
+            return;
         }
+
+        next();
     }
 
     create(req: Request, res: Response, next: NextFunction): void {
-        this._model.validate(req.body).then(() => {
+        this._model.validate(req.body).then(async () => {
             let object = new this._model(req.body);
             
-            object.save((err: any) => {
-                if (err)
-                    next(err);
-                else
-                    res.status(201).send();
-            });
+            try {
+                await object.save();
+    
+                res.locals.createdObject = object;
 
-            res.locals.createdObject = object;
+                res.status(201).send();
+            } catch (e) {
+                next(e);
+                return;
+            }
+
+            next();
         }, (err: any) => next(err));
     }
     
@@ -152,7 +168,10 @@ export class BaseResourceController {
             res.status(204).send();
         } catch (err) {
             next(err);
+            return;
         }
+
+        next();
     }
 
     async delete(req: Request, res: Response, next: NextFunction) {
@@ -162,7 +181,10 @@ export class BaseResourceController {
             res.status(204).send();
         } catch (err) {
             next(err);
+            return;
         }
+
+        next();
     }
 
     /**

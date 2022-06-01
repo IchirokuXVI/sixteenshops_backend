@@ -18,7 +18,6 @@ app.use(morgan('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
-app.use(express.static(path.join(__dirname, 'public')));
 app.use(cors());
 
 app.use(AuthController.parseToken);
@@ -30,6 +29,8 @@ app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
   console.error(err.stack);
   res.status(400).send({ error: err.message });
 });
+
+app.use(express.static(__dirname + "/../storage/public"));
 
 const port = 3000;
 
