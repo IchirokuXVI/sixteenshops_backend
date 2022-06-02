@@ -1,4 +1,3 @@
-import { BaseResourceController } from './baseResourceController';
 import { User } from '../models/user';
 import { Request, Response, NextFunction } from 'express';
 import { compare } from 'bcrypt';
@@ -110,9 +109,6 @@ export class AuthController {
 
             let tokens = await AuthController.generateTokens(user, req.get('User-Agent'));
 
-            user.refresh_tokens[0].status = false;
-            user.save();
-
             res.send(tokens);
         } catch (e) {
             next(e);
@@ -132,7 +128,19 @@ export class AuthController {
         const accessToken = jwt.sign(payload, AuthController.SECRET_ACCESS, { expiresIn: 16 });
         const refreshToken = jwt.sign({ user_id: user._id }, AuthController.SECRET_REFRESH, { expiresIn: "3 days" });
 
-        await User.updateOne({ _id: user._id }, { $push: { refresh_tokens: { signature: refreshToken.split(".")[2], user_agent: userAgent } } });
+        await User.updateOne({ _id: user._id }, {
+            $set: {
+                "refresh_tokens.0.status": false
+            }
+        });
+
+        await User.updateOne({ _id: user._id }, {
+            $push: {
+                refresh_tokens: {
+                    signature: refreshToken.split(".")[2], user_agent: userAgent
+                }
+            }
+        });
 
         return { refresh_token: refreshToken, access_token: accessToken, user: user };
     }

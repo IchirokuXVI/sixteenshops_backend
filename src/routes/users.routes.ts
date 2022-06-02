@@ -1,8 +1,10 @@
-import { Router, Request } from 'express';
+import { Router, Request, Response, NextFunction } from 'express';
 import { UserController } from '../controller/userController';
 import { AuthController } from '../controller/authController';
 import multer from 'multer';
 import fs from 'fs';
+import { parseFormDataObjects } from '../middleware/formData.middleware';
+import { requirePermission } from '../middleware/permission.middleware';
 
 const storage = multer.diskStorage({
     destination: function (req: Request, file, cb) {
@@ -33,13 +35,13 @@ const upload = multer({
 const router = Router();
 let userController = new UserController();
 
-router.get('/', AuthController.verifyToken, userController.filter);
+router.get('/', AuthController.verifyToken, requirePermission('getUser'), userController.filter);
 router.get('/checkEmail', userController.checkEmail);
 router.get('/:id', userController.get);
 router.get('/:id/avatar', userController.getAvatar);
-router.post('/', upload.single('avatar'), userController.create, userController.moveAvatar);
+router.post('/', upload.single('avatar'), parseFormDataObjects, userController.create, userController.moveAvatar);
 router.post('/filter', AuthController.verifyToken, userController.filter);
-router.put('/:id', upload.single('avatar'), userController.update);
-router.delete('/:id', userController.update, userController.deleteFolder);
+router.put('/:id', AuthController.verifyToken, upload.single('avatar'), parseFormDataObjects, userController.update);
+router.delete('/:id', AuthController.verifyToken, userController.delete, userController.deleteFolder);
 
 export const usersRouter = router;

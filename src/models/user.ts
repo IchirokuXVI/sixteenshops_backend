@@ -1,5 +1,6 @@
 import { Schema, model } from 'mongoose';
 import { hashSync } from 'bcrypt';
+import { Role } from './role';
 
 const userSchema = new Schema({
     // Emails are saved in lowercase
@@ -42,6 +43,37 @@ userSchema.static("unqueryablePaths", function() {
         "refresh_tokens"
     ];
 })
+
+userSchema.post('findOne', async function(result, next) {
+    if (result && result.permissions) {
+        let permissions: any = [];
+
+        if (result.role && result.role.permissions) {
+            permissions = result.role.permissions;
+        } else if (result.role) {
+            let role_id = result.role;
+
+            try {
+                let role = (await Role.findOne(role_id).select('permissions').lean());
+                permissions = role.permissions;
+            } catch (err) { }
+        }
+    
+        for (let permission of result.permissions) {
+            let index = permissions.findIndex((item: any) => item.equals(permission.permission));
+            if (permission.allow) {
+                if (index == -1)
+                    permissions.push(permission.permission);
+            } else {
+                if (index != -1)
+                    permissions.splice(index, 1);
+            }
+        }
+    
+        result.permissions = permissions;
+    }
+    next();
+});
 
 export const User = model('users', userSchema);
 
