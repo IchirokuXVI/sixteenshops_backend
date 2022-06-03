@@ -1,0 +1,1 @@
+This folder is needed to create new users with avatar. DO NOT DELETE

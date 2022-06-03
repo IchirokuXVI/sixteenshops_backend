@@ -130,8 +130,21 @@ export class UserController extends BaseResourceController {
             s.pipe(transformer)
                 .pipe(res);
         });
+
         s.on('error', function () {
-            res.status(404).end('Not found');
+            s = fs.createReadStream('storage/public/defaultAvatars/user.png');
+
+            s.on('open', function () {
+                // Avatars are always saved as png
+                res.set('content-type', 'image/png');
+                // Pipe the transformer and then the img
+                s.pipe(transformer)
+                    .pipe(res);
+            });
+
+            s.on('error', function() {
+                res.status(404).end('Not found');
+            });
         });
 
         return;

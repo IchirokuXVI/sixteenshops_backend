@@ -93,8 +93,15 @@ export class AuthController {
 
             let signature = token.split('.')[2];
 
-            let user = await User.findOne({ _id: oldPayload.user_id, "refresh_tokens.signature": signature })
-                                    .select({ id: 1, email: 1, role: 1, permissions: 1, refresh_tokens: { $elemMatch: { signature: signature } } });
+            let user = await User.findOne({ _id: oldPayload.user_id, "refresh_tokens.signature": signature }, null, { strict: false })
+                                    .select({ id: 1, email: 1, role: 1, permissions: 1, refresh_tokens: { $elemMatch: { signature: signature } } })
+                                    .populate({
+                                        path: 'role',
+                                        // Get friends of friends - populate the 'friends' array for every friend
+                                        populate: { path: 'permissions' }
+                                    }).populate({
+                                        path: 'permissions.permission'
+                                    });
 
             if (!user) {
                 throw new Error("token not found");

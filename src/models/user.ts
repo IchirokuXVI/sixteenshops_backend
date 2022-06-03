@@ -24,10 +24,14 @@ const userSchema = new Schema({
     role: { type: Schema.Types.ObjectId, ref: 'role' },
     // One Way Embedding
     // http://learnmongodbthehardway.com/schema/schemabasics/#:~:text=as%20a%20strategy.-,One%20Way%20Embedding,-The%20One%20Way
-    permissions: [{
-        permission: { type: Schema.Types.ObjectId, ref: 'permission' },
-        allow: { type: Boolean, required: true }
-    }],
+    permissions: {
+        type: [new Schema (
+            {
+                permission: { type: Schema.Types.ObjectId, ref: 'permission' },
+                allow: { type: Boolean, required: true }
+            }, { _id: false, strict: false } // This might create some problems...
+        )],
+    },
 }, { timestamps: true });
 
 userSchema.static("unfillablePaths", function() {
@@ -48,8 +52,11 @@ userSchema.post('findOne', async function(result, next) {
     if (result && result.permissions) {
         let permissions: any = [];
 
+        let populated = false;
+
         if (result.role && result.role.permissions) {
             permissions = result.role.permissions;
+            populated = true;
         } else if (result.role) {
             let role_id = result.role;
 
@@ -60,7 +67,14 @@ userSchema.post('findOne', async function(result, next) {
         }
     
         for (let permission of result.permissions) {
-            let index = permissions.findIndex((item: any) => item.equals(permission.permission));
+            let index = permissions.findIndex((item: any) => {
+                if (populated) {
+                    return item._id.equals(permission.permission._id);
+                } else {
+                    return item.equals(permission.permission);
+                }
+            });
+
             if (permission.allow) {
                 if (index == -1)
                     permissions.push(permission.permission);
@@ -69,7 +83,7 @@ userSchema.post('findOne', async function(result, next) {
                     permissions.splice(index, 1);
             }
         }
-    
+
         result.permissions = permissions;
     }
     next();
