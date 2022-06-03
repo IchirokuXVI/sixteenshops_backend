@@ -36,6 +36,7 @@ const router = Router();
 let userController = new UserController();
 
 router.get('/', AuthController.verifyToken, requirePermission('getUser'), userController.filter);
+router.get('/profile', AuthController.verifyToken, userController.profile);
 router.get('/checkEmail', userController.checkEmail);
 router.get('/:id', userController.get);
 router.get('/:id/avatar', userController.getAvatar);

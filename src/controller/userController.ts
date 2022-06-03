@@ -32,6 +32,10 @@ export class UserController extends BaseResourceController {
         return;
     }
 
+    async profile(req: Request, res: Response, next: NextFunction) {
+        res.json(await User.findById(res.locals.tokenInfo._id));
+    }
+
     moveAvatar(req: Request, res: Response, next: NextFunction) {
         if (req.file && req.file.fieldname == 'avatar') {
             let userPath = `storage/${res.locals.createdObject._id}`;
