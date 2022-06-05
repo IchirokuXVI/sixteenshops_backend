@@ -9,6 +9,21 @@ export class AuthController {
     private static SECRET_ACCESS = "zCzV.9o83#-xSDPW,nn(z7DBJ";
     private static SECRET_REFRESH = "n51Is!TDtxRC%*CM8nnguJspd6ej.PVep2Qf(s5NZ,bw=F8rEDQ4WXETnO4Q#&Hz<";
 
+    static async register(req: Request, res: Response, next: NextFunction) {
+        User.validate(req.body).then(async () => {
+            let object = new User({ email: req.body.email, password: req.body.password });
+            
+            try {
+                await object.save();
+    
+                res.status(201).send();
+            } catch (e) {
+                next(e);
+                return;
+            }
+        }, (err: any) => next(err));
+    }
+
     static async login(req: Request, res: Response, next: NextFunction) {
         const email: string = req.body.email;
         const password: string = req.body.password;
@@ -18,7 +33,16 @@ export class AuthController {
             return;
         }
         
-        const user = await User.findOne({email: email}).select("+password");
+        let user = await User.findOne({ email: email }, null, { strict: false })
+        .select({ id: 1, email: 1, password: 1, role: 1, permissions: 1 })
+        .populate({
+            path: 'role',
+            // Get friends of friends - populate the 'friends' array for every friend
+            populate: { path: 'permissions', select: 'name' }
+        }).populate({
+            path: 'permissions.permission',
+            select: 'name'
+        });
 
         if (!user) {
             res.status(401).send();
@@ -33,6 +57,34 @@ export class AuthController {
         }
 
         res.send(await AuthController.generateTokens(user, req.get('User-Agent')));
+    }
+
+    static async logout(req: Request, res: Response, next: NextFunction) {
+        if (req.headers.authorization && req.headers.authorization.startsWith('Bearer ')) {
+            try {
+                let token = req.headers.authorization.split(' ')[1];
+
+                const payload: any = jwt.verify(token, AuthController.SECRET_REFRESH);
+        
+                if (!payload) {
+                    res.status(403);
+                    return;
+                }
+        
+                let signature = token.split('.')[2];
+
+                User.updateOne({ _id: payload.user_id, "refresh_tokens.signature": signature  }, {
+                    $set: {
+                        "refresh_tokens.$.status": false
+                    }
+                }).exec();
+            } catch (err) {
+                next(err);
+                return;
+            }
+        }
+
+        res.send(204);
     }
 
     static async logConnection(req: Request, res: Response, next: NextFunction) {
@@ -98,9 +150,10 @@ export class AuthController {
                                     .populate({
                                         path: 'role',
                                         // Get friends of friends - populate the 'friends' array for every friend
-                                        populate: { path: 'permissions' }
+                                        populate: { path: 'permissions', select: 'name' }
                                     }).populate({
-                                        path: 'permissions.permission'
+                                        path: 'permissions.permission',
+                                        select: 'name'
                                     });
 
             if (!user) {
@@ -114,7 +167,9 @@ export class AuthController {
                 throw new Error("expired token");
             }
 
-            let tokens = await AuthController.generateTokens(user, req.get('User-Agent'));
+            delete user.refresh_tokens;
+
+            let tokens = await AuthController.generateTokens(user, req.get('User-Agent'), signature);
 
             res.send(tokens);
         } catch (e) {
@@ -122,24 +177,31 @@ export class AuthController {
         }
     }
 
-    private static async generateTokens(user: any, userAgent: any): Promise<{ refresh_token: string, access_token: string, user: any }> {
-        const payload = {
+    private static async generateTokens(user: any, userAgent: any, oldSignature?: string): Promise<{ refresh_token: string, access_token: string, user: any }> {
+        const access_payload = {
             _id: user._id,
             email: user.email,
             role: user.role,
             permissions: user.permissions
-        }
+        };
+
+        const refresh_payload = {
+            user_id: user._id
+        };
 
         // Expires in 600 seconds (10 minutes)
         // iat claim added automatically
-        const accessToken = jwt.sign(payload, AuthController.SECRET_ACCESS, { expiresIn: 16 });
-        const refreshToken = jwt.sign({ user_id: user._id }, AuthController.SECRET_REFRESH, { expiresIn: "3 days" });
+        const accessToken = jwt.sign(access_payload, AuthController.SECRET_ACCESS, { expiresIn: 16 });
+        const refreshToken = jwt.sign(refresh_payload, AuthController.SECRET_REFRESH, { expiresIn: "3 days" });
 
-        await User.updateOne({ _id: user._id }, {
-            $set: {
-                "refresh_tokens.0.status": false
-            }
-        });
+        if (oldSignature) {
+            // https://www.mongodb.com/docs/manual/reference/operator/update/positional/
+            await User.updateOne({ _id: user._id, "refresh_tokens.signature": oldSignature  }, {
+                $set: {
+                    "refresh_tokens.$.status": false
+                }
+            });
+        }
 
         await User.updateOne({ _id: user._id }, {
             $push: {
@@ -149,6 +211,6 @@ export class AuthController {
             }
         });
 
-        return { refresh_token: refreshToken, access_token: accessToken, user: user };
+        return { refresh_token: refreshToken, access_token: accessToken, user: access_payload };
     }
 }

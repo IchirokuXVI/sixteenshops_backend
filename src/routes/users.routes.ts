@@ -30,7 +30,7 @@ const upload = multer({
     limits: {
         fileSize: 1024 * 1024 * 3, // 3 MiB
     }
-})
+});
 
 const router = Router();
 let userController = new UserController();
@@ -38,9 +38,9 @@ let userController = new UserController();
 router.get('/', AuthController.verifyToken, requirePermission('getUser'), userController.filter);
 router.get('/profile', AuthController.verifyToken, userController.profile);
 router.get('/checkEmail', userController.checkEmail);
-router.get('/:id', userController.get);
+router.get('/:id', AuthController.verifyToken, requirePermission('getUser'), userController.get);
 router.get('/:id/avatar', userController.getAvatar);
-router.post('/', upload.single('avatar'), parseFormDataObjects, userController.create, userController.moveAvatar);
+router.post('/', AuthController.verifyToken, upload.single('avatar'), parseFormDataObjects, userController.create, userController.moveAvatar);
 router.post('/filter', AuthController.verifyToken, userController.filter);
 router.put('/:id', AuthController.verifyToken, upload.single('avatar'), parseFormDataObjects, userController.update);
 router.delete('/:id', AuthController.verifyToken, userController.delete, userController.deleteFolder);

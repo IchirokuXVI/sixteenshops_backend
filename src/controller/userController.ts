@@ -11,11 +11,24 @@ export class UserController extends BaseResourceController {
     }
 
     override create(req: Request, res: Response, next: NextFunction) {
-        if (req.file) {
-            // Avatar field only saves the default avatar path.
-            // The custom avatar path is always the same so there is no need to save it
+        // Avatar field only saves the default avatar path.
+        // The custom avatar path is always the same so there is no need to save it
+        if (req.file)
             req.body.avatar = null;
+
+        if (req.body.permissions) {
+            for (let permission of req.body.permissions) {
+                console.log(permission)
+                console.log("-------------------");
+                console.log(res.locals.tokenInfo.permissions);
+                
+                if (res.locals.tokenInfo.permissions.findIndex((item: any) => item._id == permission.permission) === -1) {
+                    res.status(403).send();
+                    return;
+                }
+            }
         }
+
         super.create(req, res, next);
     }
 
@@ -33,7 +46,7 @@ export class UserController extends BaseResourceController {
     }
 
     async profile(req: Request, res: Response, next: NextFunction) {
-        res.json(await User.findById(res.locals.tokenInfo._id));
+        res.json(await User.findById(res.locals.tokenInfo._id).lean());
     }
 
     moveAvatar(req: Request, res: Response, next: NextFunction) {
@@ -65,6 +78,25 @@ export class UserController extends BaseResourceController {
                 console.log('User id ' + req.params.id || req.params._id + ' avatar deleted');
             });
         }
+        
+        if (req.body.permissions) {
+            for (let permission of req.body.permissions) {
+                console.log(permission.permission)
+                console.log("-------------------");
+                console.log(res.locals.tokenInfo.permissions);
+                
+                console.log(res.locals.tokenInfo.permissions.findIndex((item: any) => item._id == permission.permission) === -1)
+
+                if (res.locals.tokenInfo.permissions.findIndex((item: any) => item._id == permission.permission) === -1) {
+                    res.status(403).send();
+                    return;
+                }
+            }
+        }
+
+        if (req.body.password === null)
+            delete req.body.password;
+
         super.update(req, res, next);
     }
 

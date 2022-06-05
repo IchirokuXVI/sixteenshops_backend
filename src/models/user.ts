@@ -28,7 +28,7 @@ const userSchema = new Schema({
         type: [new Schema (
             {
                 permission: { type: Schema.Types.ObjectId, ref: 'permission' },
-                allow: { type: Boolean, required: true }
+                allow: { type: Boolean }
             }, { _id: false, strict: false } // This might create some problems...
         )],
     },
@@ -53,7 +53,7 @@ userSchema.post('findOne', async function(result, next) {
         let permissions: any = [];
 
         let populated = false;
-
+        
         if (result.role && result.role.permissions) {
             permissions = result.role.permissions;
             populated = true;
@@ -65,26 +65,33 @@ userSchema.post('findOne', async function(result, next) {
                 permissions = role.permissions;
             } catch (err) { }
         }
-    
-        for (let permission of result.permissions) {
-            let index = permissions.findIndex((item: any) => {
-                if (populated) {
-                    return item._id.equals(permission.permission._id);
-                } else {
-                    return item.equals(permission.permission);
+
+        if (result.permissions[0]?.permission.name)
+            populated = true;
+
+        if (populated) {
+            for (let permission of result.permissions) {
+                if (permission.allow !== null) {
+                    let index = permissions.findIndex((item: any) => {
+                        if (permission.permission._id) {
+                            return item._id.equals(permission.permission._id);
+                        } else {
+                            return item.equals(permission.permission);
+                        }
+                    });
+        
+                    if (permission.allow) {
+                        if (index == -1)
+                            permissions.push(permission.permission);
+                    } else {
+                        if (index != -1)
+                            permissions.splice(index, 1);
+                    }
                 }
-            });
-
-            if (permission.allow) {
-                if (index == -1)
-                    permissions.push(permission.permission);
-            } else {
-                if (index != -1)
-                    permissions.splice(index, 1);
             }
-        }
 
-        result.permissions = permissions;
+            result.permissions = permissions;
+        }            
     }
     next();
 });

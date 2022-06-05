@@ -42,7 +42,10 @@ export const parseFormDataObjects = function (req: Request, res: Response, next:
 
             for (let i = 1; i < parts.length; i++) {
                 if (i == parts.length - 1) {
-                    object[parts[i]] = value;
+                    if (value === null || value == 'null')
+                        object[parts[i]] = null;
+                    else
+                        object[parts[i]] = value;
                 } else {
                     if (!object[parts[i]]) {
                         // Create an array if the key is numeric
@@ -58,6 +61,8 @@ export const parseFormDataObjects = function (req: Request, res: Response, next:
             }
 
             delete req.body[key];
+        } else if (req.body[key] == 'null') {
+            req.body[key] = null;
         }
     }
 

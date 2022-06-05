@@ -3,13 +3,15 @@ import { Permission } from "../models/permission";
 
 export const requirePermission = function(permissionName: string) {
     return async function(req: Request, res: Response, next: NextFunction) {
-        let permission = await Permission.findOne({ name: permissionName }).lean();
+        // let permission = await Permission.findOne({ name: permissionName }).lean();
 
-        console.log(permission)
-        console.log("------------------------------")
-        console.log(res.locals.tokenInfo.permissions)
+        if (!res.locals.tokenInfo.permissions) {
+            res.status(403).send();
+            return;
+        }
 
-        let flag = res.locals.tokenInfo.permissions.findIndex((item: any) => item._id == permission._id.toString()) != -1;
+        // let flag = res.locals.tokenInfo.permissions.findIndex((item: any) => item._id == permission._id.toString()) != -1;
+        let flag = res.locals.tokenInfo.permissions.findIndex((item: any) => item.name == permissionName) != -1;
 
         if (flag)
             next();
@@ -17,10 +19,3 @@ export const requirePermission = function(permissionName: string) {
             res.status(403).send();
     }
 };
-
-// const requirePermission = function(req: Request, res: Response, next: NextFunction) {
-//     if (res.locals.tokenInfo.permissions) {
-
-//     }
-//     next();
-// }

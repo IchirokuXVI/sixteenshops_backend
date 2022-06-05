@@ -1,6 +1,6 @@
 import { Model } from 'mongoose';
 import { Request, Response, NextFunction } from 'express';
-import { extend } from 'lodash';
+import { extend, merge, mergeWith } from 'lodash';
 
 interface Filter {
     field: string,
@@ -34,9 +34,6 @@ export class BaseResourceController {
     }
 
     async get(req: Request, res: Response, next: NextFunction) {
-        let limit: number = req.body.limit ? req.body.limit : 30;
-        let page: number = req.body.page ? req.body.page : 0;
-
         let id = req.params._id || req.params.id;
 
         try {
@@ -162,7 +159,7 @@ export class BaseResourceController {
             let originalObject = await this._model.findById(req.params.id || req.params._id);
 
             let updatedObject = extend(originalObject, req.body);
-        
+                    
             await updatedObject.save();
 
             res.status(204).send();
