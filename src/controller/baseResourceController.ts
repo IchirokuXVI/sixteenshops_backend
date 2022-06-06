@@ -156,7 +156,11 @@ export class BaseResourceController {
     
     async update(req: Request, res: Response, next: NextFunction) {
         try {
-            let originalObject = await this._model.findById(req.params.id || req.params._id);
+            let originalObject;
+            if (res.locals.documentToUpdate)
+                originalObject = res.locals.documentToUpdate;
+            else
+                originalObject = await this._model.findById(req.params.id || req.params._id);
 
             let updatedObject = extend(originalObject, req.body);
                     

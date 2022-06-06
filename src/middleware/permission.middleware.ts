@@ -10,7 +10,6 @@ export const requirePermission = function(permissionName: string) {
             return;
         }
 
-        // let flag = res.locals.tokenInfo.permissions.findIndex((item: any) => item._id == permission._id.toString()) != -1;
         let flag = res.locals.tokenInfo.permissions.findIndex((item: any) => item.name == permissionName) != -1;
 
         if (flag)

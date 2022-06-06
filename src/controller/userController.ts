@@ -3,7 +3,7 @@ import { User } from '../models/user';
 import { Request, Response, NextFunction } from 'express';
 import fs from 'fs';
 import sharp from 'sharp';
-import { isNaN } from 'lodash';
+import { isNaN, merge } from 'lodash';
 
 export class UserController extends BaseResourceController {
     constructor() {
@@ -80,18 +80,22 @@ export class UserController extends BaseResourceController {
         }
         
         if (req.body.permissions) {
+            let user = await User.findById(req.params.id);
+            res.locals.documentToUpdate = user;
             for (let permission of req.body.permissions) {
-                console.log(permission.permission)
-                console.log("-------------------");
-                console.log(res.locals.tokenInfo.permissions);
-                
-                console.log(res.locals.tokenInfo.permissions.findIndex((item: any) => item._id == permission.permission) === -1)
-
                 if (res.locals.tokenInfo.permissions.findIndex((item: any) => item._id == permission.permission) === -1) {
                     res.status(403).send();
                     return;
                 }
             }
+
+            for (let permission of user.permissions) {
+                if (req.body.permissions.findIndex((item: any) => permission.permission.equals(item.permission)) === -1) {
+                    req.body.permissions.push(permission);
+                }
+            }
+            
+            console.log(req.body.permissions);
         }
 
         if (req.body.password === null)

@@ -12,7 +12,7 @@ const app: Application = express();
 
 mongoose.connect('mongodb://localhost:27017/sixteenshopsdb');
 
-mongoose.set('debug', true);
+//mongoose.set('debug', true);
 
 app.use(morgan('dev'));
 app.use(express.json());

@@ -2,6 +2,7 @@ import { User } from '../models/user';
 import { Request, Response, NextFunction } from 'express';
 import { compare } from 'bcrypt';
 import * as jwt from 'jsonwebtoken';
+import { Types } from 'mongoose';
 
 
 export class AuthController {
@@ -87,6 +88,12 @@ export class AuthController {
         res.send(204);
     }
 
+    /**
+     * Middleware to keep track of the last user connection
+     * @param req 
+     * @param res 
+     * @param next 
+     */
     static async logConnection(req: Request, res: Response, next: NextFunction) {
         if (res.locals.tokenInfo) {
             User.updateOne({ _id: res.locals.tokenInfo._id || res.locals.tokenInfo.user_id }, { $set: { lastConnection: Date.now() } }).exec();
@@ -94,6 +101,13 @@ export class AuthController {
         next();
     }
     
+    /**
+     * Middleware to parse the token in the Authorization header if present
+     * @param req 
+     * @param res 
+     * @param next 
+     * @returns 
+     */
     static async parseToken(req: Request, res: Response, next: NextFunction) {
         if (!req.headers.authorization || !req.headers.authorization.startsWith('Bearer ')) {
             next();
@@ -164,7 +178,7 @@ export class AuthController {
                 // $[] Modifica todos los elementos del array
                 // https://www.mongodb.com/docs/manual/reference/operator/update/positional-all/
                 await User.updateOne({ _id: user._id }, { $set: { "refresh_tokens.$[].status": false } });
-                throw new Error("expired token");
+                throw new Error("invalid token");
             }
 
             delete user.refresh_tokens;
@@ -177,6 +191,14 @@ export class AuthController {
         }
     }
 
+    /**
+     * Gets a new pair of tokens for a given user
+     * Updates the user to revoke the previous token and add the new one
+     * @param user The owner of the tokens
+     * @param userAgent Browser that requested the tokens
+     * @param oldSignature Previous token that generated this request
+     * @returns 
+     */
     private static async generateTokens(user: any, userAgent: any, oldSignature?: string): Promise<{ refresh_token: string, access_token: string, user: any }> {
         const access_payload = {
             _id: user._id,
@@ -186,7 +208,10 @@ export class AuthController {
         };
 
         const refresh_payload = {
-            user_id: user._id
+            user_id: user._id,
+            // Generate a unique id for the token so even if two refresh tokens are generated
+            // in the same second they will have different signatures
+            token_id: new Types.ObjectId()
         };
 
         // Expires in 600 seconds (10 minutes)
@@ -206,6 +231,7 @@ export class AuthController {
         await User.updateOne({ _id: user._id }, {
             $push: {
                 refresh_tokens: {
+                    _id: refresh_payload.token_id, // Get the generated id from the payload
                     signature: refreshToken.split(".")[2], user_agent: userAgent
                 }
             }
