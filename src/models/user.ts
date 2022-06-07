@@ -66,7 +66,7 @@ userSchema.post('findOne', async function(result, next) {
             } catch (err) { }
         }
 
-        if (result.permissions[0]?.permission.name)
+        if (result.permissions[0]?.permission?.name)
             populated = true;
 
         if (populated) {
