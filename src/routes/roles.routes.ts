@@ -1,17 +1,24 @@
 import { Router } from 'express';
 import { AuthController } from '../controller/authController';
 import { RoleController } from '../controller/roleController';
+import { requirePermission } from '../middleware/permission.middleware';
 
 const router = Router();
 let roleController = new RoleController();
 
 router.use(AuthController.verifyToken);
 
+// Get all or filter roles
 router.get('/', roleController.filter);
-router.get('/:id', roleController.get);
-router.post('/', roleController.create);
+// Alternative endpoint for filter
 router.post('/filter', roleController.filter);
-router.put('/:id', roleController.update);
-router.delete('/:id', roleController.delete);
+// Get role
+router.get('/:id', roleController.get);
+// Create role
+router.post('/', requirePermission('createRole'), roleController.create);
+// Update role
+router.put('/:id', requirePermission('editRole'), roleController.update);
+// Delete role
+router.delete('/:id', requirePermission('deleteRole'), roleController.delete);
 
 export const rolesRouter = router;

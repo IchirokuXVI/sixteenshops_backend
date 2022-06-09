@@ -21,6 +21,8 @@ import { Request, Response, NextFunction } from "express";
 //
 // Major problem with the function: an object using both numeric and string keys will cause an error
 // Because the function assumes that every "object" using numeric keys is an array
+// Another problem: formData always returns strings so the application cannot know if null is a string
+// with value "null" or a null value. To fix this the function always parses "null" string to null value
 export const parseFormDataObjects = function (req: Request, res: Response, next: NextFunction) {
     for (let [key, value] of Object.entries(req.body)) {
         let parts = key.split('.');

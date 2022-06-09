@@ -20,20 +20,29 @@ app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(cors());
 
+// Middleware to create a variable with the token info
+// if there is a token in the Authorization header of the request
 app.use(AuthController.parseToken);
+
+// If the user is logged then update his last connection to the API
 app.use(AuthController.logConnection);
 
+// Main router of the application
 app.use(router);
 
+// Error middleware to catch errors and return a message in json
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
   console.error(err.stack);
   res.status(400).send({ error: err.message });
 });
 
+// Public files of the application. Comes last so it doesn't overwrite the main router
 app.use(express.static(__dirname + "/../storage/public"));
 
+// Port of the application
 const port = 3000;
 
+// Open node server
 const server = app.listen(port, () => console.log('Server running'));
 
 server.on('error', onError);

@@ -15,6 +15,7 @@ interface Population {
 
 export class BaseResourceController {
 
+    // The mongoose model to work with
     protected _model: Model<any>;
 
     constructor(model: Model<any>, subdocument: string[] = []) {
@@ -26,6 +27,7 @@ export class BaseResourceController {
         // so extending the generic is almost useless IMHO
         this._model = model;
 
+        // Binds the functions to 'this' object so the functions can use this._model
         this.filter = this.filter.bind(this);
         this.create = this.create.bind(this);
         this.get = this.get.bind(this);
@@ -33,6 +35,9 @@ export class BaseResourceController {
         this.delete = this.delete.bind(this);
     }
 
+    /**
+     * Gets a document with the specified id in the URL
+     */
     async get(req: Request, res: Response, next: NextFunction) {
         let id = req.params._id || req.params.id;
 
@@ -46,6 +51,14 @@ export class BaseResourceController {
         next();
     }
 
+    /**
+     * Returns an array of documents based on multiple filters defined by the user
+     * in the request body
+     * An example of a complete request would be:
+     * {
+     *  
+     * }
+     */
     async filter(req: Request, res: Response, next: NextFunction) {
         try {
             if (req.body._id || req.body.id) {
@@ -135,6 +148,11 @@ export class BaseResourceController {
         next();
     }
 
+    /**
+     * Validates the request body to know if it is safe to create a document using its data
+     * Then creates a new document, saves it to the database and creates a variable
+     * for the middlewares that need to access the created object
+     */
     create(req: Request, res: Response, next: NextFunction): void {
         this._model.validate(req.body).then(async () => {
             let object = new this._model(req.body);
@@ -154,6 +172,13 @@ export class BaseResourceController {
         }, (err: any) => next(err));
     }
     
+    /**
+     * Updates the document with the specified ID in the URL with the data
+     * given in the request body
+     * If a previous middleware already queried for this document then it should
+     * be added to res.locals.documentToUpdate to prevent another query for the
+     * same document
+     */
     async update(req: Request, res: Response, next: NextFunction) {
         try {
             let originalObject;
@@ -175,6 +200,9 @@ export class BaseResourceController {
         next();
     }
 
+    /**
+     * Deletes the document with ID specified in the URL
+     */
     async delete(req: Request, res: Response, next: NextFunction) {
         try {
             await this._model.deleteOne({ _id: req.params.id || req.params._id });

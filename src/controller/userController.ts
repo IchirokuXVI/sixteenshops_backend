@@ -32,6 +32,10 @@ export class UserController extends BaseResourceController {
         super.create(req, res, next);
     }
 
+    /**
+     * Check if an email is available
+     * Returns true if the email is taken, false otherwise
+     */
     async checkEmail(req: Request, res: Response, next: NextFunction) {
         if (!req.query.email) {
             next(new Error("missing param: email"));
@@ -45,10 +49,18 @@ export class UserController extends BaseResourceController {
         return;
     }
 
+    /**
+     * Return the data of the logged user
+     */
     async profile(req: Request, res: Response, next: NextFunction) {
         res.json(await User.findById(res.locals.tokenInfo._id).lean());
     }
 
+    /**
+     * Moves the avatar of a new user to its corresponding folder
+     * The avatar cannot be saved to the correct folder until the user
+     * is created because the ID isn't generated yet
+     */
     moveAvatar(req: Request, res: Response, next: NextFunction) {
         if (req.file && req.file.fieldname == 'avatar') {
             let userPath = `storage/${res.locals.createdObject._id}`;
@@ -60,6 +72,9 @@ export class UserController extends BaseResourceController {
         }
     }
 
+    /**
+     * Middleware to delete a folder, called after deleting an user
+     */
     deleteFolder(req: Request, res: Response, next: NextFunction) {
         let userPath = `storage/${req.params._id || req.params.id}`;
         fs.rmSync(userPath, { recursive: true, force: true });
@@ -80,8 +95,20 @@ export class UserController extends BaseResourceController {
         }
         
         if (req.body.permissions) {
-            let user = await User.findById(req.params.id);
-            res.locals.documentToUpdate = user;
+            // Check if user has permission to edit permissions
+            if (res.locals.tokenInfo.permissions.findIndex((item: any) => item.name == 'editUserPermissions') === -1) {
+                res.status(403).send();
+                return;
+            }
+
+            let user;
+            if (res.locals.documentToUpdate) {
+                user = res.locals.documentToUpdate;
+            } else {
+                user = await User.findById(req.params.id);
+                res.locals.documentToUpdate = user;
+            }
+
             for (let permission of req.body.permissions) {
                 if (res.locals.tokenInfo.permissions.findIndex((item: any) => item._id == permission.permission) === -1) {
                     res.status(403).send();
@@ -102,6 +129,17 @@ export class UserController extends BaseResourceController {
             delete req.body.password;
 
         super.update(req, res, next);
+    }
+
+    async updateProfile(req: Request, res: Response, next: NextFunction) {
+        try {
+            res.locals.documentToUpdate = await User.findById(res.locals.tokenInfo._id);
+        } catch (err) {
+            next(err);
+            return;
+        }
+
+        next();
     }
 
     /**

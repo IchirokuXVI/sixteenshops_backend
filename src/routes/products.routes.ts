@@ -1,14 +1,46 @@
-import { Router } from 'express';
+import { Router, Request, Response, NextFunction } from 'express';
 import { ProductController } from '../controller/productController';
 import { AuthController } from '../controller/authController';
+import multer from 'multer';
+import fs from 'fs';
+import { parseFormDataObjects } from '../middleware/formData.middleware';
+import { requirePermission } from '../middleware/permission.middleware';
+
+const storage = multer.diskStorage({
+    destination: function (req: Request, file, cb) {
+        let destinationFolder = `storage/temp`;
+
+        if (req.params.id || req.params._id) {
+            destinationFolder = `storage/${req.params.id || req.params._id}`;
+            fs.mkdirSync(destinationFolder, { recursive: true });
+        }
+
+        cb(null, destinationFolder);
+    },
+    filename: function (req, file, cb) {
+        if (req.method == 'POST')
+            cb(null, file.filename + '-' + Date.now() + '-' + Math.round(Math.random() * 1E9));
+        else
+            cb(null, 'avatar');
+    }
+});
+
+const upload = multer({
+    storage: storage,
+    limits: {
+        fileSize: 1024 * 1024 * 3, // 3 MiB
+    }
+});
 
 const router = Router();
 let productController = new ProductController();
 
 router.get('/', productController.filter);
-router.get('/:_id', productController.filter);
-router.post('/', AuthController.verifyToken, productController.create);
+router.get('/:id', productController.filter);
+router.post('/', AuthController.verifyToken, requirePermission('createProduct'), upload.array('image'), parseFormDataObjects, productController.create);
 router.post('/filter', productController.filter);
+router.put('/:id', AuthController.verifyToken, requirePermission('createProduct'), upload.array('image'), parseFormDataObjects, productController.update);
+router.delete('/:id', AuthController.verifyToken, requirePermission('deleteProduct'), productController.delete);
 
 router.get('/:product/optionGroups', productController.getOptionGroups);
 router.get('/:product/optionGroups/:optionGroup', productController.getOptionGroup);

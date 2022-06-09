@@ -35,14 +35,25 @@ const upload = multer({
 const router = Router();
 let userController = new UserController();
 
+// Get all users or filter them
 router.get('/', AuthController.verifyToken, requirePermission('getUser'), userController.filter);
-router.get('/profile', AuthController.verifyToken, userController.profile);
-router.get('/checkEmail', userController.checkEmail);
-router.get('/:id', AuthController.verifyToken, requirePermission('getUser'), userController.get);
-router.get('/:id/avatar', userController.getAvatar);
-router.post('/', AuthController.verifyToken, upload.single('avatar'), parseFormDataObjects, userController.create, userController.moveAvatar);
+// Alternative endpoint using post for filter
 router.post('/filter', AuthController.verifyToken, userController.filter);
-router.put('/:id', AuthController.verifyToken, upload.single('avatar'), parseFormDataObjects, userController.update);
-router.delete('/:id', AuthController.verifyToken, userController.delete, userController.deleteFolder);
+// Get your own user
+router.get('/profile', AuthController.verifyToken, userController.profile);
+// Check if an email exists
+router.get('/checkEmail', userController.checkEmail);
+// Get user
+router.get('/:id', AuthController.verifyToken, requirePermission('getUser'), userController.get);
+// Get avatar of user
+router.get('/:id/avatar', userController.getAvatar);
+// Create new user
+router.post('/', AuthController.verifyToken, requirePermission('createUser'), upload.single('avatar'), parseFormDataObjects, userController.create, userController.moveAvatar);
+// Update your own user
+router.put('/profile', AuthController.verifyToken, upload.single('avatar'), parseFormDataObjects, userController.updateProfile, userController.update);
+// Update an user
+router.put('/:id', AuthController.verifyToken, requirePermission('editUser'), upload.single('avatar'), parseFormDataObjects, userController.update);
+// Delete an user
+router.delete('/:id', AuthController.verifyToken, requirePermission('deleteUser'), userController.delete, userController.deleteFolder);
 
 export const usersRouter = router;
