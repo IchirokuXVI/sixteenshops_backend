@@ -107,7 +107,7 @@ userSchema.post('findOne', async function(result, next) {
 
         // Check if the first permission has a name to know if it is populated
         // Cannot check by _id because it will always be true
-        if (result.permissions[0]?.permission.name)
+        if (result.permissions[0]?.permission?.name)
             populated = true;
 
         // Only alter the permissions array if the query was populated
