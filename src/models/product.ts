@@ -5,7 +5,8 @@ import { Combination } from './combination';
 export const productSchema = new Schema({
     name:  String,
     brand: String,
-    price: Number,
+    price: { type: Number, required: true, default: 0 },
+    stock: { type: Number, required: true, default: 0 },
     images: [String], // Filename of each image of the product
     discount: { type: Number, default: 0 },
     optionGroups: [
@@ -17,34 +18,42 @@ export const productSchema = new Schema({
  * Checks if a option was added to the product and calculate the cartesian product
  * to create all possible combinations
  */
-productSchema.post('save', async function(doc) {
-    // doc.optionGroups?.forEach(
-    //     (optionGroup: any) =>
-    //         optionGroup.options?.forEach((option: any) => {
-    //             // Always false... idk why
-    //             console.log(option.isNew);
-    //         }
-    //     )
-    // );
-
+productSchema.pre('save', async function() {
     let updateCombinations = false;
 
-    doc.optionGroups?.forEach((optionGroup: any) => {
-        if (!updateCombinations && optionGroup.options) {
+    let newOptions: any = {  };
+
+    this.optionGroups?.forEach((optionGroup: any) => {
+        if (optionGroup.isNew) {
             updateCombinations = true;
             return;
         }
     });
 
-    // The product got its options changed so calculate all combinations again
+    if (!updateCombinations) {
+        this.optionGroups?.forEach((optionGroup: any) => {
+            for (let option of optionGroup.options) {
+                if (option.isNew) {
+                    if (!Array.isArray(newOptions[optionGroup.name])) {
+                        newOptions[optionGroup.name] = [];
+                    }
+
+                    newOptions[optionGroup.name].push(option);
+
+                    // Combinations shouldn't be updated if only options are
+                    // added but it is way easier this way so...
+                    updateCombinations = true;
+                }
+            }
+        });
+    }
+
+    // A option group was added or removed so the cartesian product must be calculated for everything
     if (updateCombinations) {
-        let optionGroups = doc.optionGroups.map((optionGroup: any) => optionGroup.options);
+        let optionGroups = this.optionGroups.map((optionGroup: any) => optionGroup.options);
 
         let cartesian = cartesianProduct(...optionGroups);
         
-        console.log(cartesian);
-        
-
         let combinations: { options: string[] }[] = [];
 
         for (let i = 0; i < cartesian.length; i++) {
@@ -55,12 +64,13 @@ productSchema.post('save', async function(doc) {
                 combinations[i].options.push(cartesian[i]._id)
         }
 
-        try {
-            Combination.insertMany(combinations);
-        } catch (e) {
-            // TO-DO check if the error is from a unique index else rethrow it
+        for (let combination of combinations) {
+            Combination.create(combination).catch((err) => err);
         }
-        
+
+        // Replaced insertMany for create because of how array unique indexes works
+        // and because the validation is way harder with insertMany
+        // Combination.insertMany(combinations).catch(err => console.log(err));
     }
 });
 

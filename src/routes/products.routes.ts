@@ -11,24 +11,21 @@ const storage = multer.diskStorage({
         let destinationFolder = `storage/temp`;
 
         if (req.params.id || req.params._id) {
-            destinationFolder = `storage/${req.params.id || req.params._id}`;
+            destinationFolder = `storage/public/productImgs/${req.params.id || req.params._id}`;
             fs.mkdirSync(destinationFolder, { recursive: true });
         }
 
         cb(null, destinationFolder);
     },
     filename: function (req, file, cb) {
-        if (req.method == 'POST')
-            cb(null, file.filename + '-' + Date.now() + '-' + Math.round(Math.random() * 1E9));
-        else
-            cb(null, 'avatar');
+        cb(null, file.originalname + '-' + Date.now() + '-' + Math.round(Math.random() * 1E9));
     }
 });
 
 const upload = multer({
     storage: storage,
     limits: {
-        fileSize: 1024 * 1024 * 3, // 3 MiB
+        fileSize: 1024 * 1024 * 8, // 8 MiB
     }
 });
 
@@ -36,11 +33,11 @@ const router = Router();
 let productController = new ProductController();
 
 router.get('/', productController.filter);
-router.get('/:id', productController.filter);
-router.post('/', AuthController.verifyToken, requirePermission('createProduct'), upload.array('image'), parseFormDataObjects, productController.create);
+router.get('/:id', productController.get);
+router.post('/', AuthController.verifyToken, requirePermission('createProduct'), upload.any(), parseFormDataObjects, productController.addImagesToProduct, productController.create, productController.moveImages);
 router.post('/filter', productController.filter);
-router.put('/:id', AuthController.verifyToken, requirePermission('createProduct'), upload.array('image'), parseFormDataObjects, productController.update);
-router.delete('/:id', AuthController.verifyToken, requirePermission('deleteProduct'), productController.delete);
+router.put('/:id', AuthController.verifyToken, requirePermission('editProduct'), upload.any(), parseFormDataObjects, productController.addOptions, productController.addImagesToProduct, productController.update);
+router.delete('/:id', AuthController.verifyToken, requirePermission('deleteProduct'), productController.delete, productController.deleteFolder);
 
 router.get('/:product/optionGroups', productController.getOptionGroups);
 router.get('/:product/optionGroups/:optionGroup', productController.getOptionGroup);
