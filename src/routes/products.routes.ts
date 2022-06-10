@@ -36,7 +36,7 @@ router.get('/', productController.filter);
 router.get('/:id', productController.get);
 router.post('/', AuthController.verifyToken, requirePermission('createProduct'), upload.any(), parseFormDataObjects, productController.addImagesToProduct, productController.create, productController.moveImages);
 router.post('/filter', productController.filter);
-router.put('/:id', AuthController.verifyToken, requirePermission('editProduct'), upload.any(), parseFormDataObjects, productController.addOptions, productController.addImagesToProduct, productController.update);
+router.put('/:id', AuthController.verifyToken, requirePermission('editProduct'), upload.any(), parseFormDataObjects, productController.addImagesToProduct, productController.update);
 router.delete('/:id', AuthController.verifyToken, requirePermission('deleteProduct'), productController.delete, productController.deleteFolder);
 
 router.get('/:product/optionGroups', productController.getOptionGroups);

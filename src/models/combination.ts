@@ -9,11 +9,21 @@ const combinationSchema = new Schema({
     options: { type: [{ type: Schema.Types.ObjectId, ref: 'product.optionsGroups.options' }] }
 }, { timestamps: true });
 
-combinationSchema.pre('save', async function() {
-    let dupe = await Combination.exists({ options: this.options });
+combinationSchema.static("unfillablePaths", function() {
+    return [ ];
+});
 
-    if (dupe)
-        throw new Error("Combination with those options already exists");
+combinationSchema.static("unqueryablePaths", function() {
+    return [ ];
+});
+
+combinationSchema.pre('save', async function() {
+    if (this.isNew) {
+        let dupe = await Combination.exists({ options: this.options });
+    
+        if (dupe)
+            throw new Error("Combination with those options already exists");
+    }
 });
 
 export const Combination = model('combination', combinationSchema);

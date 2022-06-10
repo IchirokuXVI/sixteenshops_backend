@@ -162,7 +162,7 @@ export class BaseResourceController {
     
                 res.locals.createdObject = object;
 
-                res.status(201).send();
+                res.status(201).send(object._id);
             } catch (e) {
                 next(e);
                 return;

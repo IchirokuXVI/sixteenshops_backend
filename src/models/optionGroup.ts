@@ -3,7 +3,7 @@ import { optionSchema } from './option';
 
 // Lots of nullable values because the default values will come from the product
 export const optionGroupSchema = new Schema({
-    name:  { type: String, required: true },
+    name:  { type: String },
     options: [
         optionSchema
     ],

@@ -44,6 +44,15 @@ export class ProductController extends BaseResourceController {
         fs.rmSync(productPath, { recursive: true, force: true });
     }
 
+    /**
+     * 
+     * NO USE
+     * 
+     * This function is no longer used. It had a few flaws and also I started using it
+     * because I wasn't sending the _id of optionGroups and options. When I built the function
+     * I started sending the _id because I needed it and after that i realized that MongoDB was
+     * replacing my previous options because they didn't have the _id path
+     */
     async addOptions(req: Request, res: Response, next: NextFunction) {
         try {
             let originalProduct = await Product.findById(req.params.id || req.params._id);
