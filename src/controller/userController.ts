@@ -121,11 +121,9 @@ export class UserController extends BaseResourceController {
                     req.body.permissions.push(permission);
                 }
             }
-            
-            console.log(req.body.permissions);
         }
 
-        if (req.body.password === null)
+        if (req.body.password === null || (typeof(req.body.password) === 'string' && (req.body.password.trim().length < 1)))
             delete req.body.password;
 
         super.update(req, res, next);
